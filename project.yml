@@ -1,0 +1,34 @@
+name: Floe
+options:
+  bundleIdPrefix: lt.ovi
+  deploymentTarget:
+    macOS: "27.0"
+  xcodeVersion: "27.0"
+packages:
+  AXSwift:
+    url: https://github.com/tmandry/AXSwift
+    from: 0.3.2
+targets:
+  Floe:
+    type: application
+    platform: macOS
+    sources:
+      - Floe
+    dependencies:
+      - package: AXSwift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: lt.ovi.floe
+        PRODUCT_NAME: Floe
+        DEVELOPMENT_TEAM: 4769F9TNB7
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_APP_SANDBOX: NO
+        SWIFT_VERSION: "6.0"
+        SWIFT_OBJC_BRIDGING_HEADER: Floe/Floe-Bridging-Header.h
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_NSHumanReadableCopyright: "GPL-3.0 — includes code from Ice (© Jordan Baird) and Thaw (© Toni Förster)"
+        DEAD_CODE_STRIPPING: YES
