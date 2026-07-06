@@ -41,8 +41,18 @@ final class StatusItemController: NSObject {
             button.setAccessibilityIdentifier("lt.ovi.floe.statusItem")
         }
         updateIcon(revealed: engine.isRevealed)
+        setIconHidden(engine.hideOwnIcon)
         cancellable = engine.$isRevealed.sink { [weak self] revealed in
             self?.updateIcon(revealed: revealed)
+        }
+    }
+
+    /// Shows or hides Floe's own status item. When hidden, controls are reached
+    /// by right-clicking the empty menu bar.
+    func setIconHidden(_ hidden: Bool) {
+        statusItem.isVisible = !hidden
+        if !hidden {
+            statusItem.length = NSStatusItem.squareLength
         }
     }
 
@@ -51,7 +61,9 @@ final class StatusItemController: NSObject {
     /// `NSStatusItem Visible`/`VisibleCC` defaults during the reflow, which would
     /// otherwise suppress the item permanently. Reset both, re-show, and refresh
     /// the length/image so Floe stays reachable while other items are hidden.
+    /// Respects the user's choice to hide Floe's own icon.
     func reassertVisibility() {
+        guard !engine.hideOwnIcon else { return }
         let defaults = UserDefaults.standard
         defaults.set(true, forKey: "NSStatusItem Visible \(Self.autosaveName)")
         defaults.set(true, forKey: "NSStatusItem VisibleCC \(Self.autosaveName)")
@@ -77,12 +89,29 @@ final class StatusItemController: NSObject {
         }
     }
 
-    private func showMenu() {
+    /// Builds Floe's controls menu, shared by the status-item right-click and
+    /// the right-click-empty-menu-bar path.
+    private func buildMenu() -> NSMenu {
         let menu = NSMenu()
+
+        let revealItem = NSMenuItem(
+            title: engine.isRevealed ? "Hide Icons" : "Show Hidden Icons",
+            action: #selector(toggleRevealAction),
+            keyEquivalent: ""
+        )
+        revealItem.target = self
+        menu.addItem(revealItem)
+
+        menu.addItem(.separator())
 
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(settingsAction), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
+
+        let iconItem = NSMenuItem(title: "Hide Floe's Icon", action: #selector(toggleHideOwnIcon), keyEquivalent: "")
+        iconItem.target = self
+        iconItem.state = engine.hideOwnIcon ? .on : .off
+        menu.addItem(iconItem)
 
         let loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
         loginItem.target = self
@@ -95,12 +124,31 @@ final class StatusItemController: NSObject {
         quitItem.target = NSApp
         menu.addItem(quitItem)
 
+        return menu
+    }
+
+    private func showMenu() {
         // Assigning the menu and clicking programmatically shows it at the
         // status item; clearing it afterwards keeps left-click as a plain
         // action instead of always opening the menu.
-        statusItem.menu = menu
+        statusItem.menu = buildMenu()
         statusItem.button?.performClick(nil)
         statusItem.menu = nil
+    }
+
+    /// Pops up the controls menu at a screen location — used when Floe's own
+    /// icon is hidden and the user right-clicks the empty menu bar. `point` is
+    /// in Cocoa screen coordinates.
+    func showContextMenu(at point: NSPoint) {
+        buildMenu().popUp(positioning: nil, at: point, in: nil)
+    }
+
+    @objc private func toggleRevealAction() {
+        engine.toggleReveal()
+    }
+
+    @objc private func toggleHideOwnIcon() {
+        engine.hideOwnIcon.toggle()
     }
 
     @objc private func settingsAction() {

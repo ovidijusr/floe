@@ -45,6 +45,13 @@ Requirements: macOS 27, Apple Silicon. The app is signed with a Developer ID and
 - Reveal them anytime by clicking the chevron or the empty menu bar; hide again the same way.
 - Optionally set an **auto-rehide** delay, or turn off click-to-toggle, in Settings.
 
+### Zero-icon mode
+
+Want Floe to leave *no* icon of its own? Turn on **Hide Floe's Icon** in Settings. Then:
+
+- **Left-click** the empty menu bar to show/hide your icons.
+- **Right-click** the empty menu bar for the controls menu (Show/Hide, Settings, Quit…).
+
 ## Troubleshooting
 
 **"It keeps asking for Accessibility even though I granted it."**

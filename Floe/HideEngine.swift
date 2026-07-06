@@ -46,8 +46,19 @@ final class HideEngine: ObservableObject {
         }
     }
 
-    /// Set by `AppDelegate` to start/stop the menu-bar click monitor.
+    /// Whether Floe's own menu bar icon is hidden (controls reached by
+    /// right-clicking the menu bar instead).
+    @Published var hideOwnIcon: Bool {
+        didSet {
+            UserDefaults.standard.set(hideOwnIcon, forKey: Self.hideOwnIconKey)
+            onHideOwnIconChanged?(hideOwnIcon)
+        }
+    }
+
+    /// Set by `AppDelegate` to start/stop the menu-bar click monitor and to
+    /// show/hide Floe's own status item.
     var onToggleOnEmptyClickChanged: ((Bool) -> Void)?
+    var onHideOwnIconChanged: ((Bool) -> Void)?
 
     /// True while the user has toggled the hidden items back into view.
     @Published private(set) var isRevealed = false
@@ -67,6 +78,7 @@ final class HideEngine: ObservableObject {
     private static let hiddenSystemItemIDsKey = "hiddenSystemItemIDs"
     private static let rehideDelayKey = "rehideDelay"
     private static let toggleOnEmptyClickKey = "toggleOnEmptyClick"
+    private static let hideOwnIconKey = "hideOwnIcon"
 
     private let diagLog = DiagLog(category: "HideEngine")
     private let backend = AssessmentModeBackend()
@@ -89,6 +101,7 @@ final class HideEngine: ObservableObject {
         hiddenSystemItemIDs = Set((defaults.array(forKey: Self.hiddenSystemItemIDsKey) as? [Int]) ?? [])
         rehideDelay = defaults.object(forKey: Self.rehideDelayKey) as? Int ?? 30
         toggleOnEmptyClick = defaults.object(forKey: Self.toggleOnEmptyClickKey) as? Bool ?? true
+        hideOwnIcon = defaults.object(forKey: Self.hideOwnIconKey) as? Bool ?? false
     }
 
     /// Called once Accessibility is granted.

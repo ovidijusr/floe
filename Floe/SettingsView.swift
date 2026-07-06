@@ -109,6 +109,12 @@ struct SettingsView: View {
 
             Section("Behavior") {
                 Toggle("Click empty menu bar space to show/hide", isOn: $engine.toggleOnEmptyClick)
+                VStack(alignment: .leading, spacing: 2) {
+                    Toggle("Hide Floe's own icon", isOn: $engine.hideOwnIcon)
+                    Text("Reach these controls by right-clicking the empty menu bar.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Picker("Rehide after showing", selection: $engine.rehideDelay) {
                     Text("Never").tag(0)
                     Text("10 seconds").tag(10)

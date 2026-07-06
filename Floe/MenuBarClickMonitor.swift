@@ -23,6 +23,10 @@ final class MenuBarClickMonitor {
     private var globalMonitor: Any?
     private var localMonitor: Any?
 
+    /// Invoked when the user right-clicks the empty menu bar; the argument is a
+    /// Cocoa screen point where the controls menu should appear.
+    var onRequestMenu: ((NSPoint) -> Void)?
+
     init(engine: HideEngine) {
         self.engine = engine
     }
@@ -34,12 +38,13 @@ final class MenuBarClickMonitor {
 
     private func start() {
         guard globalMonitor == nil else { return }
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
-            MainActor.assumeIsolated { self?.handleClick(at: event.locationInWindow) }
+        let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown]
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] event in
+            MainActor.assumeIsolated { self?.handleClick(rightButton: event.type == .rightMouseDown) }
         }
         // Local monitor covers the rare case where Floe itself is the active app.
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
-            MainActor.assumeIsolated { self?.handleClick(at: NSEvent.mouseLocation) }
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
+            MainActor.assumeIsolated { self?.handleClick(rightButton: event.type == .rightMouseDown) }
             return event
         }
     }
@@ -54,7 +59,15 @@ final class MenuBarClickMonitor {
     /// Everything here is computed in CG (top-left) coordinates, anchored to the
     /// display that hosts the app menus + status items, so the gap is coherent
     /// even with multiple displays each drawing their own menu bar.
-    private func handleClick(at _: NSPoint) {
+    private func handleClick(rightButton: Bool) {
+        // A right-click in the gap only matters if it will open the menu; skip
+        // the AX walk otherwise. Left-clicks toggle only when that's enabled.
+        if rightButton {
+            guard onRequestMenu != nil else { return }
+        } else {
+            guard engine.toggleOnEmptyClick else { return }
+        }
+
         // The frontmost app's menu bar frame (CG coords) locates the app-menu
         // display and its right edge. Without it there's no reliable gap.
         guard let frontApp = NSWorkspace.shared.frontmostApplication,
@@ -93,8 +106,13 @@ final class MenuBarClickMonitor {
         diagLog.debug("click x=\(click.x) y=\(click.y) yBand=\(menuFrame.minY)...\(menuFrame.maxY) gap=[\(leftBound),\(rightBound)] inGap=\(inGap)")
         guard inGap else { return }
 
-        diagLog.debug("empty menu-bar click → toggle")
-        engine.toggleReveal()
+        if rightButton {
+            diagLog.debug("empty menu-bar right-click → menu")
+            onRequestMenu?(NSEvent.mouseLocation)
+        } else {
+            diagLog.debug("empty menu-bar click → toggle")
+            engine.toggleReveal()
+        }
     }
 
     /// Converts the current cursor location from Cocoa (bottom-left origin of the

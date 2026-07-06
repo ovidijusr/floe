@@ -40,10 +40,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let monitor = MenuBarClickMonitor(engine: engine)
         clickMonitor = monitor
-        engine.onToggleOnEmptyClickChanged = { [weak monitor] enabled in
-            monitor?.isEnabled = enabled
+        monitor.onRequestMenu = { [weak controller] point in
+            controller?.showContextMenu(at: point)
         }
-        monitor.isEnabled = engine.toggleOnEmptyClick
+        engine.onToggleOnEmptyClickChanged = { [weak self] _ in self?.updateClickMonitor() }
+        engine.onHideOwnIconChanged = { [weak self, weak controller] hidden in
+            controller?.setIconHidden(hidden)
+            self?.updateClickMonitor()
+        }
+        updateClickMonitor()
 
         // Prompting via AXIsProcessTrustedWithOptions auto-registers Floe in
         // System Settings → Privacy & Security → Accessibility.
@@ -67,6 +72,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Floe running to bring it back. CGSWindowHider also restores via its
         // own willTerminate observer; this covers the assertion.
         engine.setRevealed(true)
+    }
+
+    /// The click monitor is needed for empty-click toggling and/or reaching the
+    /// controls menu when Floe's own icon is hidden.
+    private func updateClickMonitor() {
+        clickMonitor?.isEnabled = engine.toggleOnEmptyClick || engine.hideOwnIcon
     }
 
     private func showSettingsWindow() {
