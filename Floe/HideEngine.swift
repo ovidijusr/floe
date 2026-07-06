@@ -38,6 +38,17 @@ final class HideEngine: ObservableObject {
         }
     }
 
+    /// Whether clicking the empty part of the menu bar toggles the hidden section.
+    @Published var toggleOnEmptyClick: Bool {
+        didSet {
+            UserDefaults.standard.set(toggleOnEmptyClick, forKey: Self.toggleOnEmptyClickKey)
+            onToggleOnEmptyClickChanged?(toggleOnEmptyClick)
+        }
+    }
+
+    /// Set by `AppDelegate` to start/stop the menu-bar click monitor.
+    var onToggleOnEmptyClickChanged: ((Bool) -> Void)?
+
     /// True while the user has toggled the hidden items back into view.
     @Published private(set) var isRevealed = false
 
@@ -55,6 +66,7 @@ final class HideEngine: ObservableObject {
     private static let hiddenBundleIDsKey = "hiddenBundleIDs"
     private static let hiddenSystemItemIDsKey = "hiddenSystemItemIDs"
     private static let rehideDelayKey = "rehideDelay"
+    private static let toggleOnEmptyClickKey = "toggleOnEmptyClick"
 
     private let diagLog = DiagLog(category: "HideEngine")
     private let backend = AssessmentModeBackend()
@@ -76,6 +88,7 @@ final class HideEngine: ObservableObject {
         hiddenBundleIDs = Set(defaults.stringArray(forKey: Self.hiddenBundleIDsKey) ?? [])
         hiddenSystemItemIDs = Set((defaults.array(forKey: Self.hiddenSystemItemIDsKey) as? [Int]) ?? [])
         rehideDelay = defaults.object(forKey: Self.rehideDelayKey) as? Int ?? 30
+        toggleOnEmptyClick = defaults.object(forKey: Self.toggleOnEmptyClickKey) as? Bool ?? true
     }
 
     /// Called once Accessibility is granted.

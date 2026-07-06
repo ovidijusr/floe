@@ -83,6 +83,7 @@ struct SettingsView: View {
             }
 
             Section("Behavior") {
+                Toggle("Click empty menu bar space to show/hide", isOn: $engine.toggleOnEmptyClick)
                 Picker("Rehide after showing", selection: $engine.rehideDelay) {
                     Text("Never").tag(0)
                     Text("10 seconds").tag(10)

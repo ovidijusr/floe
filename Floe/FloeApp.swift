@@ -25,6 +25,7 @@ struct FloeApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let engine = HideEngine()
     private var statusItemController: StatusItemController?
+    private var clickMonitor: MenuBarClickMonitor?
     private var settingsWindow: NSWindow?
     private var permissionPollTimer: Timer?
 
@@ -36,6 +37,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine.onAssertionApplied = { [weak controller] in
             controller?.reassertVisibility()
         }
+
+        let monitor = MenuBarClickMonitor(engine: engine)
+        clickMonitor = monitor
+        engine.onToggleOnEmptyClickChanged = { [weak monitor] enabled in
+            monitor?.isEnabled = enabled
+        }
+        monitor.isEnabled = engine.toggleOnEmptyClick
 
         // Prompting via AXIsProcessTrustedWithOptions auto-registers Floe in
         // System Settings → Privacy & Security → Accessibility.
