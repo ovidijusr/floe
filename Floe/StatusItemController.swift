@@ -75,10 +75,11 @@ final class StatusItemController: NSObject {
     private func updateIcon(revealed: Bool) {
         let symbol = revealed ? "chevron.forward" : "chevron.backward"
         let description = revealed ? "Hide menu bar items" : "Show hidden menu bar items"
-        statusItem.button?.image = NSImage(
-            systemSymbolName: symbol,
-            accessibilityDescription: description
-        )
+        // Bolder, slightly larger chevron with rounded caps — reads cleanly in
+        // the macOS 27 menu bar.
+        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .bold, scale: .medium)
+        statusItem.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: description)?
+            .withSymbolConfiguration(config)
     }
 
     @objc private func handleClick() {
