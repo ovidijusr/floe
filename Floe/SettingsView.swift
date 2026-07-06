@@ -9,6 +9,7 @@ import SwiftUI
 /// One window: pick which menu bar items are hidable, and the rehide delay.
 struct SettingsView: View {
     @ObservedObject var engine: HideEngine
+    @State private var hasAccessibility = AXHelpers.isProcessTrusted()
 
     /// One row per third-party app (hiding is per-app on macOS 27).
     private var appRows: [(bundleID: String, name: String, icon: NSImage?)] {
@@ -54,9 +55,33 @@ struct SettingsView: View {
                 }
             }
 
+            if !hasAccessibility {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Accessibility access needed", systemImage: "lock.shield")
+                            .font(.headline)
+                        Text("Floe needs Accessibility access to see your menu bar icons. Turn **Floe** on in the list, then come back here — you only need to do this once.")
+                            .fixedSize(horizontal: false, vertical: true)
+                            .foregroundStyle(.secondary)
+                        Button("Open Accessibility Settings…") {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            } else {
+                Section {
+                    Text("Turn on the apps and system icons you want to keep tucked away. Click **Floe's chevron** (or the empty part of the menu bar) to reveal them, then again to hide.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section("Apps") {
                 if appRows.isEmpty {
-                    Text("No third-party menu bar items found.")
+                    Text(hasAccessibility ? "No third-party menu bar items found yet — open the apps whose icons you want to manage." : "Grant Accessibility access above to list your menu bar apps.")
                         .foregroundStyle(.secondary)
                 }
                 ForEach(appRows, id: \.bundleID) { row in
@@ -95,8 +120,12 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(minWidth: 420, minHeight: 480)
         .navigationTitle("Floe")
-        .onAppear { engine.refreshItems() }
-        .onReceive(Timer.publish(every: 3, on: .main, in: .common).autoconnect()) { _ in
+        .onAppear {
+            hasAccessibility = AXHelpers.isProcessTrusted()
+            engine.refreshItems()
+        }
+        .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in
+            hasAccessibility = AXHelpers.isProcessTrusted()
             engine.refreshItems()
         }
     }
