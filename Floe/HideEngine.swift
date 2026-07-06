@@ -47,6 +47,11 @@ final class HideEngine: ObservableObject {
     /// Whether the private hiding mechanism exists on this OS build.
     let isMechanismAvailable = AssessmentModeBackend.isAvailable
 
+    /// Invoked (deferred) after the assertion reflows the menu bar, so the
+    /// owner can force its own status item back on — the reflow otherwise
+    /// suppresses it permanently. Set by `AppDelegate`.
+    var onAssertionApplied: (() -> Void)?
+
     private static let hiddenBundleIDsKey = "hiddenBundleIDs"
     private static let hiddenSystemItemIDsKey = "hiddenSystemItemIDs"
     private static let rehideDelayKey = "rehideDelay"
@@ -155,6 +160,15 @@ final class HideEngine: ObservableObject {
             concealedSystemItemIDs: hiddenSystemItemIDs,
             knownHostBundleIDs: knownHostBundleIDs
         )
+
+        // The assertion reflows the whole bar and suppresses our own status
+        // item; re-assert it once MenuBarAgent has finished reflowing. Two
+        // passes cover both a fast and a slightly delayed reflow.
+        for delay in [0.15, 0.5] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.onAssertionApplied?()
+            }
+        }
 
         startMaintenanceTimer()
     }

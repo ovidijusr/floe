@@ -29,8 +29,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var permissionPollTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusItemController = StatusItemController(engine: engine) { [weak self] in
+        let controller = StatusItemController(engine: engine) { [weak self] in
             self?.showSettingsWindow()
+        }
+        statusItemController = controller
+        engine.onAssertionApplied = { [weak controller] in
+            controller?.reassertVisibility()
         }
 
         // Prompting via AXIsProcessTrustedWithOptions auto-registers Floe in

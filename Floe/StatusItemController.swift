@@ -12,6 +12,8 @@ import ServiceManagement
 /// real menu bar; right-click opens the menu.
 @MainActor
 final class StatusItemController: NSObject {
+    private static let autosaveName = "Floe.ControlItem"
+
     private let engine: HideEngine
     private let openSettings: () -> Void
     private let statusItem: NSStatusItem
@@ -20,7 +22,16 @@ final class StatusItemController: NSObject {
     init(engine: HideEngine, openSettings: @escaping () -> Void) {
         self.engine = engine
         self.openSettings = openSettings
+        // Clear any stale VisibleCC=0 a previous session's assertion reflow left
+        // behind, so the item is not suppressed before the first reassert.
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: "NSStatusItem Visible \(Self.autosaveName)")
+        defaults.set(true, forKey: "NSStatusItem VisibleCC \(Self.autosaveName)")
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        // Stable autosave name so the NSStatusItem visibility defaults MenuBarAgent
+        // writes are keyed predictably and can be forced back on (see reassertVisibility).
+        statusItem.autosaveName = Self.autosaveName
         super.init()
 
         if let button = statusItem.button {
@@ -33,6 +44,20 @@ final class StatusItemController: NSObject {
         cancellable = engine.$isRevealed.sink { [weak self] revealed in
             self?.updateIcon(revealed: revealed)
         }
+    }
+
+    /// Forces Floe's own status item back on after the assessment-mode assertion
+    /// reflows the menu bar. MenuBarAgent zeroes the item's persisted
+    /// `NSStatusItem Visible`/`VisibleCC` defaults during the reflow, which would
+    /// otherwise suppress the item permanently. Reset both, re-show, and refresh
+    /// the length/image so Floe stays reachable while other items are hidden.
+    func reassertVisibility() {
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: "NSStatusItem Visible \(Self.autosaveName)")
+        defaults.set(true, forKey: "NSStatusItem VisibleCC \(Self.autosaveName)")
+        statusItem.isVisible = true
+        statusItem.length = NSStatusItem.squareLength
+        updateIcon(revealed: engine.isRevealed)
     }
 
     private func updateIcon(revealed: Bool) {
